@@ -259,9 +259,18 @@ def search_inventory(inventory):
         )
 
 
-def display_summary(inventory):
-    """Calculate and display inventory summary information."""
-    unique_items = len(inventory)
+def is_low_stock(quantity):
+    """Return True if quantity is below the low-stock threshold."""
+    return quantity < LOW_STOCK_THRESHOLD
+
+
+def calculate_summary(inventory):
+    """Calculate summary values for the inventory.
+
+    Returns a dictionary with unique_items, total_quantity, low_stock_items,
+    and category_counts. Category counts ignore capitalization and are keyed
+    by the first spelling of each category that appears in the inventory.
+    """
     total_quantity = 0
     low_stock_items = 0
     category_counts = {}
@@ -270,27 +279,39 @@ def display_summary(inventory):
     for item in inventory:
         total_quantity += item["quantity"]
 
-        if item["quantity"] < LOW_STOCK_THRESHOLD:
+        if is_low_stock(item["quantity"]):
             low_stock_items += 1
 
         category_key = item["category"].lower()
-        if category_key not in category_counts:
-            category_counts[category_key] = 0
+        if category_key not in category_labels:
             category_labels[category_key] = item["category"]
-        category_counts[category_key] += 1
+        label = category_labels[category_key]
+        category_counts[label] = category_counts.get(label, 0) + 1
+
+    return {
+        "unique_items": len(inventory),
+        "total_quantity": total_quantity,
+        "low_stock_items": low_stock_items,
+        "category_counts": category_counts,
+    }
+
+
+def display_summary(inventory):
+    """Display inventory summary information."""
+    summary = calculate_summary(inventory)
 
     print("\nInventory Summary")
-    print(f"Unique items: {unique_items}")
-    print(f"Total quantity: {total_quantity}")
-    print(f"Low-stock items: {low_stock_items}")
+    print(f'Unique items: {summary["unique_items"]}')
+    print(f'Total quantity: {summary["total_quantity"]}')
+    print(f'Low-stock items: {summary["low_stock_items"]}')
     print("\nItems by category:")
 
-    if not category_counts:
+    if not summary["category_counts"]:
         print("No categories found.")
         return
 
-    for category_key, count in category_counts.items():
-        print(f"{category_labels[category_key]}: {count}")
+    for category, count in summary["category_counts"].items():
+        print(f"{category}: {count}")
 
 
 def main():
