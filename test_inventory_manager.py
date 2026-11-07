@@ -138,3 +138,186 @@ def test_save_then_load_round_trip_preserves_inventory(tmp_path, sample_inventor
 
     # Assert
     assert loaded_inventory == sample_inventory
+
+
+# ---------------------------------------------------------------------------
+# 3. Search
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "search_term, expected_names",
+    [
+        ("Printer Paper", ["Printer Paper"]),
+        ("paper", ["Printer Paper"]),
+        ("sTiCkY nOtEs", ["Sticky Notes"]),
+        ("charger", ["Laptop Charger", "Phone Charger"]),
+        ("stapler", []),
+        ("", []),
+        ("   ", []),
+    ],
+    ids=[
+        "exact-name",
+        "partial-name",
+        "ignores-capitalization",
+        "multiple-matches",
+        "no-matches",
+        "empty-term",
+        "whitespace-only-term",
+    ],
+)
+def test_find_matching_items_returns_expected_items(
+    sample_inventory, search_term, expected_names
+):
+    # Arrange: sample_inventory fixture and parameterized search term
+
+    # Act
+    matches = find_matching_items(sample_inventory, search_term)
+
+    # Assert
+    assert [item["name"] for item in matches] == expected_names
+
+
+# ---------------------------------------------------------------------------
+# 4. Remove item
+# ---------------------------------------------------------------------------
+
+
+def test_remove_first_item(sample_inventory):
+    # Arrange
+    item_number = 1
+
+    # Act
+    removed_item = remove_item_by_number(sample_inventory, item_number)
+
+    # Assert
+    assert removed_item["name"] == "Laptop Charger"
+    assert [item["name"] for item in sample_inventory] == [
+        "Phone Charger",
+        "Printer Paper",
+        "Sticky Notes",
+        "Dry-Erase Markers",
+    ]
+
+
+def test_remove_middle_item(sample_inventory):
+    # Arrange
+    item_number = 3
+
+    # Act
+    removed_item = remove_item_by_number(sample_inventory, item_number)
+
+    # Assert
+    assert removed_item["name"] == "Printer Paper"
+    assert [item["name"] for item in sample_inventory] == [
+        "Laptop Charger",
+        "Phone Charger",
+        "Sticky Notes",
+        "Dry-Erase Markers",
+    ]
+
+
+def test_remove_last_item(sample_inventory):
+    # Arrange
+    item_number = 5
+
+    # Act
+    removed_item = remove_item_by_number(sample_inventory, item_number)
+
+    # Assert
+    assert removed_item["name"] == "Dry-Erase Markers"
+    assert [item["name"] for item in sample_inventory] == [
+        "Laptop Charger",
+        "Phone Charger",
+        "Printer Paper",
+        "Sticky Notes",
+    ]
+
+
+@pytest.mark.parametrize(
+    "item_number",
+    [0, -1, 6],
+    ids=["zero", "negative", "larger-than-inventory"],
+)
+def test_remove_rejects_invalid_item_number(sample_inventory, item_number):
+    # Arrange
+    original_inventory = [item.copy() for item in sample_inventory]
+
+    # Act
+    removed_item = remove_item_by_number(sample_inventory, item_number)
+
+    # Assert
+    assert removed_item is None
+    assert sample_inventory == original_inventory
+
+
+# ---------------------------------------------------------------------------
+# 5. Update quantity
+# ---------------------------------------------------------------------------
+
+
+def test_update_item_quantity_changes_quantity(sample_inventory):
+    # Arrange
+    item_number = 2
+
+    # Act
+    result = update_item_quantity(sample_inventory, item_number, 12)
+
+    # Assert
+    assert result is True
+    assert sample_inventory[1]["quantity"] == 12
+
+
+def test_update_item_quantity_accepts_zero(sample_inventory):
+    # Arrange
+    item_number = 1
+
+    # Act
+    result = update_item_quantity(sample_inventory, item_number, 0)
+
+    # Assert
+    assert result is True
+    assert sample_inventory[0]["quantity"] == 0
+
+
+def test_update_item_quantity_leaves_other_items_unchanged(sample_inventory):
+    # Arrange
+    expected_inventory = [item.copy() for item in sample_inventory]
+    expected_inventory[3]["quantity"] = 40
+
+    # Act
+    update_item_quantity(sample_inventory, 4, 40)
+
+    # Assert
+    assert sample_inventory == expected_inventory
+
+
+@pytest.mark.parametrize(
+    "item_number",
+    [0, -3, 6],
+    ids=["zero", "negative", "larger-than-inventory"],
+)
+def test_update_item_quantity_rejects_invalid_item_number(
+    sample_inventory, item_number
+):
+    # Arrange
+    original_inventory = [item.copy() for item in sample_inventory]
+
+    # Act
+    result = update_item_quantity(sample_inventory, item_number, 10)
+
+    # Assert
+    assert result is False
+    assert sample_inventory == original_inventory
+
+
+def test_update_item_quantity_rejects_negative_quantity(sample_inventory):
+    # Arrange
+    original_inventory = [item.copy() for item in sample_inventory]
+
+    # Act
+    result = update_item_quantity(sample_inventory, 1, -2)
+
+    # Assert
+    assert result is False
+    assert sample_inventory == original_inventory
