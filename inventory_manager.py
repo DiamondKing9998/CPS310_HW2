@@ -151,6 +151,22 @@ def remove_item(inventory):
     print(f'Item removed: {removed_item["name"]}')
 
 
+def find_matching_items(inventory, search_term):
+    """Return items whose names contain search_term, ignoring capitalization.
+
+    An empty or whitespace-only search term matches nothing and returns [].
+    """
+    search_term = search_term.strip().lower()
+    if not search_term:
+        return []
+
+    matches = []
+    for item in inventory:
+        if search_term in item["name"].lower():
+            matches.append(item)
+    return matches
+
+
 def search_inventory(inventory):
     """Prompt for an item-name search term and display matching items."""
     search_term = input("Enter part or all of an item name: ").strip()
@@ -158,10 +174,7 @@ def search_inventory(inventory):
         print("Search term cannot be empty.")
         return
 
-    matches = []
-    for item in inventory:
-        if search_term.lower() in item["name"].lower():
-            matches.append(item)
+    matches = find_matching_items(inventory, search_term)
 
     if not matches:
         print("No inventory items matched your search.")
