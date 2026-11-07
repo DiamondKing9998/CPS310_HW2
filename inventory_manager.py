@@ -100,6 +100,36 @@ def add_item(inventory):
     print("Item added successfully.")
 
 
+def is_valid_item_number(inventory, item_number):
+    """Return True if item_number is a valid 1-based position in inventory."""
+    return 1 <= item_number <= len(inventory)
+
+
+def update_item_quantity(inventory, item_number, new_quantity):
+    """Set the quantity of the item at 1-based item_number.
+
+    Returns True on success. Returns False, leaving the inventory unchanged,
+    if the item number is out of range or the quantity is negative.
+    """
+    if not is_valid_item_number(inventory, item_number):
+        return False
+    if new_quantity < 0:
+        return False
+
+    inventory[item_number - 1]["quantity"] = new_quantity
+    return True
+
+
+def remove_item_by_number(inventory, item_number):
+    """Remove and return the item at 1-based item_number.
+
+    Returns None, leaving the inventory unchanged, if the number is invalid.
+    """
+    if not is_valid_item_number(inventory, item_number):
+        return None
+    return inventory.pop(item_number - 1)
+
+
 def update_quantity(inventory):
     """Prompt for an item number and replace its quantity, then save it."""
     if not inventory:
@@ -113,7 +143,7 @@ def update_quantity(inventory):
         return
 
     selection = int(selection_text)
-    if selection < 1 or selection > len(inventory):
+    if not is_valid_item_number(inventory, selection):
         print("Item number is outside the available range.")
         return
 
@@ -123,8 +153,8 @@ def update_quantity(inventory):
         return
 
     quantity = int(quantity_text)
+    update_item_quantity(inventory, selection, quantity)
     item = inventory[selection - 1]
-    item["quantity"] = quantity
     save_inventory(inventory, INVENTORY_FILE)
     print(f'{item["name"]} quantity updated to {quantity}.')
 
@@ -141,12 +171,11 @@ def remove_item(inventory):
         print("Item number must be a valid whole number.")
         return
 
-    selection = int(selection_text)
-    if selection < 1 or selection > len(inventory):
+    removed_item = remove_item_by_number(inventory, int(selection_text))
+    if removed_item is None:
         print("Item number is outside the available range.")
         return
 
-    removed_item = inventory.pop(selection - 1)
     save_inventory(inventory, INVENTORY_FILE)
     print(f'Item removed: {removed_item["name"]}')
 
