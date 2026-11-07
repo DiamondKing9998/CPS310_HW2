@@ -66,35 +66,77 @@ def view_inventory(inventory):
         )
 
 
+def parse_quantity(quantity_text):
+    """Convert quantity text to an int, or return None if it is not a whole number.
+
+    Negative numbers such as "-2" are converted; validate_quantity rejects them.
+    """
+    quantity_text = quantity_text.strip()
+    try:
+        return int(quantity_text)
+    except ValueError:
+        return None
+
+
+def validate_item_name(inventory, name):
+    """Return an error message for an invalid new item name, or None if valid."""
+    name = name.strip()
+    if not name:
+        return "Item name cannot be empty."
+    if "|" in name:
+        return "Item name may not contain the | character."
+    for item in inventory:
+        if item["name"].lower() == name.lower():
+            return "An item with that name already exists."
+    return None
+
+
+def validate_category(category):
+    """Return an error message for an invalid category, or None if valid."""
+    category = category.strip()
+    if not category:
+        return "Category cannot be empty."
+    if "|" in category:
+        return "Category may not contain the | character."
+    return None
+
+
+def validate_quantity(quantity):
+    """Return an error message for an invalid quantity, or None if valid."""
+    if quantity is None or quantity < 0:
+        return "Quantity must be a nonnegative whole number."
+    return None
+
+
+def validate_new_item(inventory, name, category, quantity):
+    """Return the first validation error for a new item, or None if it is valid."""
+    return (
+        validate_item_name(inventory, name)
+        or validate_category(category)
+        or validate_quantity(quantity)
+    )
+
+
 def add_item(inventory):
     """Prompt for and add one validated inventory item, then save it."""
     name = input("Enter the item name: ").strip()
-    if not name:
-        print("Item name cannot be empty.")
+    error = validate_item_name(inventory, name)
+    if error:
+        print(error)
         return
-    if "|" in name:
-        print("Item name may not contain the | character.")
-        return
-
-    for item in inventory:
-        if item["name"].lower() == name.lower():
-            print("An item with that name already exists.")
-            return
 
     category = input("Enter the category: ").strip()
-    if not category:
-        print("Category cannot be empty.")
-        return
-    if "|" in category:
-        print("Category may not contain the | character.")
+    error = validate_category(category)
+    if error:
+        print(error)
         return
 
-    quantity_text = input("Enter the quantity: ").strip()
-    if not quantity_text.isdigit():
-        print("Quantity must be a nonnegative whole number.")
+    quantity = parse_quantity(input("Enter the quantity: "))
+    error = validate_quantity(quantity)
+    if error:
+        print(error)
         return
 
-    quantity = int(quantity_text)
     inventory.append({"name": name, "category": category, "quantity": quantity})
     save_inventory(inventory, INVENTORY_FILE)
     print("Item added successfully.")
